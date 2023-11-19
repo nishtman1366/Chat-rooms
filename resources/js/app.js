@@ -5,18 +5,7 @@ const currentUserId = dataWrapper?.dataset.userId;
 const currentUser = JSON.parse(dataWrapper?.dataset.user);
 const channelName = dataWrapper.dataset.chatId;
 const isMember = dataWrapper.dataset.userIsmember;
-
-function callWebsockets() {
-    axios.get('test-websockets')
-        .then(response => console.log('called'))
-        .catch(error => console.log(error))
-}
-
-let logo = document.getElementById('logo');
-
-logo.addEventListener('click', () => callWebsockets())
-logo.removeEventListener('click', () => callWebsockets())
-
+let userJoined=false;
 function init() {
     Notification.requestPermission()
         .then((permission) => {
@@ -36,7 +25,7 @@ function init() {
 
             }
         });
-    if (JSON.parse(isMember)) {
+    if (JSON.parse(isMember) && !userJoined) {
         joinToChat(channelName, currentUserId)
     }
     const messagesContainer = document.getElementById('messages-container');
@@ -77,16 +66,9 @@ function removeUser(user) {
 
 function joinToChat(channelName, currentUserId) {
     const channel = Echo.join(`chat-room-${channelName}`)
-    channel.here((users) => {
-        addUserToList({name: currentUser?.name});
-    })
-        .joining((user) => {
-            addUserToList(user);
-            console.log('joining', user);
-        })
-        .leaving((user) => {
-            removeUser(user);
-        })
+    channel.here((users) => addUserToList({name: currentUser?.name}))
+        .joining((user) => addUserToList(user))
+        .leaving((user) => removeUser(user))
         .listen('ReceiveMessages', (e) => {
             const messagesContainer = document.getElementById('messages-container');
             if (messagesContainer) {
@@ -121,6 +103,7 @@ function joinToChat(channelName, currentUserId) {
             if (shadowPaper) {
                 shadowPaper.classList.add('hidden');
             }
+            userJoined = true;
         })
         .listenForWhisper('typing', (e) => {
             document.getElementById('whispering').innerText = '';
