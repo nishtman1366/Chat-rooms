@@ -26,11 +26,11 @@ function init() {
 
             }
         });
-    if (JSON.parse(isMember) && !userJoined) {
-        console.log('isMember', isMember);
-        console.log('userJoined', userJoined);
-        joinToChat(channelName, currentUserId)
-    }
+    // if (JSON.parse(isMember) && !userJoined) {
+    //     console.log('isMember', isMember);
+    //     console.log('userJoined', userJoined);
+    //     joinToChat(channelName, currentUserId)
+    // }
     const messagesContainer = document.getElementById('messages-container');
     if (messagesContainer) {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
