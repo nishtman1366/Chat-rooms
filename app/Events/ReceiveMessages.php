@@ -24,6 +24,7 @@ class ReceiveMessages implements ShouldBroadcast
      */
     public function __construct(Chat $chat, ChatsMessage $message)
     {
+        Log::channel('daily')->info('Message Received!');
         $this->chat = $chat;
         $this->data = [
             'message' => $message->message,
