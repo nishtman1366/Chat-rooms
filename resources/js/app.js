@@ -3,7 +3,7 @@ import './bootstrap';
 const dataWrapper = document.getElementById("data-wrapper");
 const currentUserId = dataWrapper?.dataset.userId;
 const currentUser = JSON.parse(dataWrapper?.dataset.user);
-const channelName = dataWrapper.dataset.chatId;
+const channelId = dataWrapper.dataset.chatId;
 const isMember = dataWrapper.dataset.userIsmember;
 let userJoined = false;
 
@@ -29,7 +29,7 @@ function init() {
     // if (JSON.parse(isMember) && !userJoined) {
     //     console.log('isMember', isMember);
     //     console.log('userJoined', userJoined);
-    //     joinToChat(channelName, currentUserId)
+    //     joinToChat(channelId, currentUserId)
     // }
     const messagesContainer = document.getElementById('messages-container');
     if (messagesContainer) {
@@ -67,7 +67,7 @@ function removeUser(user) {
     }
 }
 
-function onMessageReceived(e){
+function onMessageReceived(e) {
     const messagesContainer = document.getElementById('messages-container');
     if (messagesContainer) {
         const wrapper = document.createElement('div');
@@ -96,7 +96,7 @@ function onMessageReceived(e){
     }
 }
 
-function subscribed(){
+function subscribed() {
     console.log('subscribed!');
     let shadowPaper = document.getElementById('shadow-paper');
     if (shadowPaper) {
@@ -105,7 +105,7 @@ function subscribed(){
     userJoined = true;
 }
 
-function whispering(e){
+function whispering(e) {
     document.getElementById('whispering').innerText = '';
     document.getElementById('whispering').innerText = `${e.name} is typing`;
     setTimeout(() => {
@@ -113,36 +113,33 @@ function whispering(e){
     }, 1000)
 }
 
-function joinToChat(channelName, currentUserId) {
-    if(!userJoined) {
-        const channel = Echo.join(`chat-room-${channelName}`);
+function joinToChat() {
+    if (!userJoined) {
+        axios.post(`chats/${channelId}/join`)
+            .then(response => {
+                console.log('api called successfully')
+                const channel = Echo.join(`chat-room-${channelId}`);
+                channel.here((users) => addUserToList({name: currentUser?.name}))
+                    .joining((user) => addUserToList(user))
+                    .leaving((user) => removeUser(user))
+                    .listen('ReceiveMessages', (e) => onMessageReceived(e))
+                    .subscribed(() => subscribed())
+                    .listenForWhisper('typing', (e) => whispering(e))
+                    .error(error => console.log('channel error', error));
 
-        channel.here((users) => addUserToList({name: currentUser?.name}))
-            .joining((user) => addUserToList(user))
-            .leaving((user) => removeUser(user))
-            .listen('ReceiveMessages', (e) => onMessageReceived(e))
-            .subscribed(() => subscribed())
-            .listenForWhisper('typing', (e) => whispering(e))
-            .error(error => console.log('channel error', error));
-
-
-        document.getElementById('message-box')
-            .addEventListener('keydown', function (e) {
-                channel.whisper('typing', {
-                    name: currentUser.name,
-                });
-            });
+                document.getElementById('message-box')
+                    .addEventListener('keydown', function (e) {
+                        channel.whisper('typing', {
+                            name: currentUser.name,
+                        });
+                    });
+            })
+            .catch(error => console.log(error))
     }
 }
 
 const joinChatButton = document.getElementById('join-chat-button')
-joinChatButton?.addEventListener('click', (e) => {
-    axios.post(`chats/${channelName}/join`)
-        .then(response => {
-            joinToChat(channelName, currentUserId)
-        })
-        .catch(error => console.log(error))
-})
+joinChatButton?.addEventListener('click', () => joinToChat())
 
 const logoutButton = document.getElementById('logout-button')
 
@@ -165,7 +162,7 @@ message?.addEventListener('keydown', (e) => {
 
 function sendMessage(e, message) {
     if (message && message.value) {
-        axios.post(`chats/${channelName}/messages/send`, {message: message.value})
+        axios.post(`chats/${channelId}/messages/send`, {message: message.value})
             .then(response => message.value = '')
             .catch(error => console.log(error))
     }
@@ -174,7 +171,7 @@ function sendMessage(e, message) {
 sendButton?.addEventListener('click', (e) => sendMessage(e, message))
 
 function leaveChatRoom() {
-    axios.get(`chats/${channelName}/leave`)
+    axios.get(`chats/${channelId}/leave`)
         .then(response => window.location.reload())
         .catch(error => console.log(error))
 }
