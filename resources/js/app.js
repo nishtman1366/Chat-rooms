@@ -67,62 +67,72 @@ function removeUser(user) {
     }
 }
 
+function onMessageReceived(e){
+    const messagesContainer = document.getElementById('messages-container');
+    if (messagesContainer) {
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('flex');
+        const balloon = document.createElement('div');
+        balloon.classList.add('w-64', 'rounded-lg', 'p-1');
+        if (parseInt(currentUserId) === parseInt(e.data.sender.id)) {
+            wrapper.classList.add('justify-end');
+            balloon.classList.add('bg-gray-300', 'dark:bg-gray-600');
+        } else {
+            balloon.classList.add('bg-gray-200', 'dark:bg-gray-700');
+        }
+        wrapper.appendChild(balloon);
+        const userBox = document.createElement('div');
+        userBox.classList.add('flex', 'items-center', 'space-x-1', 'text-xs', 'dark:text-gray-300');
+        userBox.appendChild(document.createTextNode(e.data?.sender?.name));
+        balloon.appendChild(userBox);
+        const messageBox = document.createElement('div');
+        messageBox.classList.add('text-sm', 'text-gray-90', 'dark:text-gray-100');
+        messageBox.appendChild(document.createTextNode(e.data?.message));
+        balloon.appendChild(messageBox);
+
+        messagesContainer.appendChild(wrapper);
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+}
+
+function subscribed(){
+    console.log('subscribed!');
+    let shadowPaper = document.getElementById('shadow-paper');
+    if (shadowPaper) {
+        shadowPaper.classList.add('hidden');
+    }
+    userJoined = true;
+}
+
+function whispering(e){
+    document.getElementById('whispering').innerText = '';
+    document.getElementById('whispering').innerText = `${e.name} is typing`;
+    setTimeout(() => {
+        document.getElementById('whispering').innerText = '';
+    }, 1000)
+}
+
 function joinToChat(channelName, currentUserId) {
-    const channel = Echo.join(`chat-room-${channelName}`)
-    channel.here((users) => addUserToList({name: currentUser?.name}))
-        .joining((user) => addUserToList(user))
-        .leaving((user) => removeUser(user))
-        .listen('ReceiveMessages', (e) => {
-            const messagesContainer = document.getElementById('messages-container');
-            if (messagesContainer) {
-                const wrapper = document.createElement('div');
-                wrapper.classList.add('flex');
-                const balloon = document.createElement('div');
-                balloon.classList.add('w-64', 'rounded-lg', 'p-1');
-                if (parseInt(currentUserId) === parseInt(e.data.sender.id)) {
-                    wrapper.classList.add('justify-end');
-                    balloon.classList.add('bg-gray-300', 'dark:bg-gray-600');
-                } else {
-                    balloon.classList.add('bg-gray-200', 'dark:bg-gray-700');
-                }
-                wrapper.appendChild(balloon);
-                const userBox = document.createElement('div');
-                userBox.classList.add('flex', 'items-center', 'space-x-1', 'text-xs', 'dark:text-gray-300');
-                userBox.appendChild(document.createTextNode(e.data?.sender?.name));
-                balloon.appendChild(userBox);
-                const messageBox = document.createElement('div');
-                messageBox.classList.add('text-sm', 'text-gray-90', 'dark:text-gray-100');
-                messageBox.appendChild(document.createTextNode(e.data?.message));
-                balloon.appendChild(messageBox);
+    if(!userJoined) {
+        const channel = Echo.join(`chat-room-${channelName}`);
 
-                messagesContainer.appendChild(wrapper);
+        channel.here((users) => addUserToList({name: currentUser?.name}))
+            .joining((user) => addUserToList(user))
+            .leaving((user) => removeUser(user))
+            .listen('ReceiveMessages', (e) => onMessageReceived(e))
+            .subscribed(() => subscribed())
+            .listenForWhisper('typing', (e) => whispering(e))
+            .error(error => console.log('channel error', error));
 
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
-        })
-        .subscribed(() => {
-            console.log('subscribed!');
-            let shadowPaper = document.getElementById('shadow-paper');
-            if (shadowPaper) {
-                shadowPaper.classList.add('hidden');
-            }
-            userJoined = true;
-        })
-        .listenForWhisper('typing', (e) => {
-            document.getElementById('whispering').innerText = '';
-            document.getElementById('whispering').innerText = `${e.name} is typing`;
-            setTimeout(() => {
-                document.getElementById('whispering').innerText = '';
-            }, 1000)
-        })
-        .error(error => console.log('channel error', error));
-    document.getElementById('message-box')
-        .addEventListener('keydown', function (e) {
-            channel.whisper('typing', {
-                name: currentUser.name,
+
+        document.getElementById('message-box')
+            .addEventListener('keydown', function (e) {
+                channel.whisper('typing', {
+                    name: currentUser.name,
+                });
             });
-        });
-
+    }
 }
 
 const joinChatButton = document.getElementById('join-chat-button')
