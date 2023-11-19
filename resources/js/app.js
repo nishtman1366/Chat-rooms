@@ -5,7 +5,8 @@ const currentUserId = dataWrapper?.dataset.userId;
 const currentUser = JSON.parse(dataWrapper?.dataset.user);
 const channelName = dataWrapper.dataset.chatId;
 const isMember = dataWrapper.dataset.userIsmember;
-let userJoined=false;
+let userJoined = false;
+
 function init() {
     Notification.requestPermission()
         .then((permission) => {
@@ -26,6 +27,8 @@ function init() {
             }
         });
     if (JSON.parse(isMember) && !userJoined) {
+        console.log('isMember', isMember);
+        console.log('userJoined', userJoined);
         joinToChat(channelName, currentUserId)
     }
     const messagesContainer = document.getElementById('messages-container');
